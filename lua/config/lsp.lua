@@ -75,5 +75,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
 vim.lsp.enable({
 	"gopls",
 	"terraformls",
-	"lua_ls"
+	"lua_ls",
+	"phpls"
 })

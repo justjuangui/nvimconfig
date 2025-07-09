@@ -76,5 +76,10 @@ vim.lsp.enable({
 	"gopls",
 	"terraformls",
 	"lua_ls",
-	"phpls"
+	"phpls",
+	"yamlls",
+	"ts_ls",
+	"tflint",
+	"regalls",
+	"jsonls"
 })

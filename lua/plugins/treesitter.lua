@@ -16,6 +16,7 @@ return {
       'php',
       'sql',
       'terraform',
+      'hcl',
       'javascript',
       'typescript',
       'tsx',
@@ -23,13 +24,14 @@ return {
       'css',
       'json',
       'toml',
-      'svelte'
+      'svelte',
+      'rego'
     },
     auto_install = false,
     highlight = {
       enable = true,
       additional_vim_regex_highlighting = { 'ruby' },
     },
-    indent = { enable = false, disabled = 'ruby' },
+    indent = { enable = true, disabled = 'ruby' },
   }
 }

@@ -38,6 +38,10 @@ vim.g.terminal_emulator = "wt"
 vim.g.netrw_browse_split = 0
 vim.g.netrw_winsize = 25
 
+vim.o.autoindent = true
+vim.o.smartindent = false
+vim.o.cindent = false
+
 vim.diagnostic.config({
 	signs = {
 		text = {

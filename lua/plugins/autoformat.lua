@@ -6,13 +6,16 @@ return {
 		{
 			"<leader>fd",
 			function()
-				require("conform").format({ async = true, lsp_format = "fallback" })
+				require("conform").format({ async = true })
 			end,
 			mode = "",
 			desc = "[F]ormat [D]ocument",
 		},
 	},
 	opts = {
+		default_format_opts = {
+			lsp_format = "fallback",
+		},
 		notify_on_error = false,
 		format_on_save = nil,
 		-- format_on_save = function(bufnr)
@@ -32,6 +35,11 @@ return {
 			lua = { "stylua" },
 			javascript = {"prettier"},
 			typescript = {"prettier"},
+			tf = { "terraform_fmt" },
+			terraform = { "terraform_fmt" },
+			hcl = { "terragrunt_hclfmt" },
+			yaml = { "yamlfmt" },
+			php = { "php_cs_fixer" }
 		},
 	},
 }

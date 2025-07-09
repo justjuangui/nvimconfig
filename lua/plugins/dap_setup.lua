@@ -75,40 +75,7 @@ return {
 		end
 
 		-- Install golang specific config
-		require("dap-go").setup({
-			dap_configurations = {
-				{
-					type = "go",
-					name = "Debug Main.go",
-					mode = "debug",
-					request = "launch",
-					program = "${workspaceFolder}\\main.go",
-					output = "main.exe",
-          outputMode = "remote",
-				},
-			},
-      delve = {
-        port = "${port}",
-        args = { "--log"},
-      }
-		})
-
-		-- Configure 0AD Dap Interface by default
-		-- TODO: Maybe create the plugin for comunity
-		dap.adapters.pyrogenesis = {
-      type = "server",
-			host = "127.0.0.1",
-			port = 9229,
-		}
-		dap.providers.configs["pyrogenesis"] = function(bufnr)
-			return {
-				{
-					name = "0AD Dap Server",
-					type = "pyrogenesis",
-					request = "attach",
-				},
-			}
-		end
+		require("dap-go").setup({})
 	end,
 }
 

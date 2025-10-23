@@ -16,7 +16,7 @@ return {
 		default_format_opts = {
 			lsp_format = "fallback",
 		},
-		notify_on_error = false,
+		notify_on_error = true,
 		format_on_save = nil,
 		-- format_on_save = function(bufnr)
 		-- 	local disable_filetypes = { c = true, cpp = true }
@@ -33,13 +33,15 @@ return {
 		-- end,
 		formatters_by_ft = {
 			lua = { "stylua" },
-			javascript = {"prettier"},
-			typescript = {"prettier"},
+			javascript = { "prettier" },
+			typescript = { "prettier" },
+			svelte = { "prettier" },
 			tf = { "terraform_fmt" },
 			terraform = { "terraform_fmt" },
 			hcl = { "terragrunt_hclfmt" },
 			yaml = { "yamlfmt" },
-			php = { "php_cs_fixer" }
+			php = { "php_cs_fixer" },
+			go = { "golangci-lint", "golines", "goimports" }
 		},
 	},
 }

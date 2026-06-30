@@ -30,7 +30,8 @@ return {
 				"toml",
 				"svelte",
 				"rego",
-				"ebnf"
+				"ebnf",
+				"jinja"
 			},
 			auto_install = false,
 			highlight = {

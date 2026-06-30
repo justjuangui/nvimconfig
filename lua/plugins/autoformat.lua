@@ -6,7 +6,7 @@ return {
 		{
 			"<leader>fd",
 			function()
-				require("conform").format({ async = true })
+				require("conform").format({ async = false, lsp_fallback = true })
 			end,
 			mode = "",
 			desc = "[F]ormat [D]ocument",
@@ -41,7 +41,7 @@ return {
 			hcl = { "terragrunt_hclfmt" },
 			yaml = { "yamlfmt" },
 			php = { "php_cs_fixer" },
-			go = { "golangci-lint", "golines", "goimports" }
+			go = { "goimports", "gofumpt", "golines" },
 		},
 	},
 }

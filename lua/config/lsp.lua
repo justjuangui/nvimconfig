@@ -37,6 +37,13 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		local client = assert(vim.lsp.get_client_by_id(event.data.client_id))
 
+		if client and client.name == "rust-analyzer" then
+			local neotest = require("neotest")
+			map("<leader>td", function()
+				neotest.run.run({ strategy = "dap" })
+			end, "Debug nearest rust test")
+		end
+
 		if client:supports_method("textDocument/completion") then
 			vim.lsp.completion.enable(true, client.id, event.buf, { autotrigger = true })
 		end
@@ -77,7 +84,6 @@ vim.lsp.enable({
 	"terraformls",
 	"lua_ls",
 	"phpls",
-	"yamlls",
 	"ts_ls",
 	"tflint",
 	"regalls",

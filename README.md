@@ -61,7 +61,7 @@ key wins. See [Known issues](#known-issues).
 | Terraform / HCL | `terraformls`, `tflint` | terraform fmt, terragrunt hclfmt | — | — |
 | Rego | `regal` | — | — | — |
 | JSON | `jsonls` | — | — | — |
-| YAML | `yamlls` | yamlfmt | — | — |
+| YAML | `yamlls` (SchemaStore) | yamlfmt | — | — |
 | GLSL | — | — | — | compiled to SPIR-V on save |
 | SQL | — (dadbod completion) | — | — | — |
 
@@ -187,52 +187,49 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
 
 ### Broken — configured but does nothing
 
-1. **`yamlls` is never enabled.** `lsp/yamlls.lua` exists and the server is installed, but
-   the name is absent from `vim.lsp.enable()` at `lua/config/lsp.lua:82-93`. That file
-   also has `root_margers` instead of `root_markers` on line 4.
-2. **`ts_ls`'s `on_attach` is dead.** `lsp/ts_ls.lua:18` nests it inside `handlers`, so
+1. **`ts_ls`'s `on_attach` is dead.** `lsp/ts_ls.lua:18` nests it inside `handlers`, so
    Neovim treats it as a response handler for a nonexistent method and
    `:LspTypeScriptSourceAction` is never created.
-3. **Svelte LSP cannot start.** `svelteserver` is not installed and
+2. **Svelte LSP cannot start.** `svelteserver` is not installed and
    `svelte-language-server` is missing from `mason-tool-installer`'s `ensure_installed`.
-4. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
+3. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
    linters. Missing: `stylua`, `prettier`, `yamlfmt`, `php-cs-fixer`, `gofumpt`,
    `golines`, `terragrunt`. Only `goimports` resolves.
 
 ### Conflicts
 
-5. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
+4. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
    `lua/config/lsp.lua:47-49` runs alongside `blink.cmp`.
-6. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
+5. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
    `lua/config/settings_setup.lua:59-60`. They are alternatives.
-7. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
+6. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
    `priority`. And `lua/config/lazy.lua:21` names colorscheme `"tokyo"`, which does not
    exist — it is `tokyonight-night`.
-8. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
+7. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
     ships no defaults.
-9. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
+8. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
     `BufWritePre`. Manual `<leader>fd` only.
 
 ### Dead code
 
-10. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
-11. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
+9. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
+10. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
     Neovim variable.
-12. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
-13. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
-14. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
-15. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
-16. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
-17. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
+11. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
+12. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
+13. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
+14. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
+15. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
+16. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
 
 ### Hygiene
 
-18. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
+17. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
     `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-19. The whole DAP stack and `rustaceanvim` load at startup in every project
+18. The whole DAP stack and `rustaceanvim` load at startup in every project
     (~1/3 of the 149 ms startup).
-20. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
-21. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
+19. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
+20. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
     and `tokyo.lua` use 2-space indent while everything else uses tabs.
 
 ### Resolved
@@ -246,6 +243,12 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
   (textobjects ships its own `textobjects.scm` and calls `vim.treesitter` directly, while
   `locals` and `folds` queries still come from nvim-treesitter). Conditionals moved from
   `]d`/`[d` to `]i`/`[i` to avoid shadowing diagnostic navigation.
+- **`yamlls` was configured but never enabled** — `lsp/yamlls.lua` existed with
+  SchemaStore on, and the server was installed, but the name was missing from
+  `vim.lsp.enable()`. The same file also had `root_margers` for `root_markers`, so even
+  once enabled it would have fallen back to single-file mode. Both fixed. Verified:
+  yamlls attaches, `root_dir` resolves to the git root, and SchemaStore flags a bad key
+  in a GitHub workflow as `yaml-schema: GitHub Workflow — Property stpes is not allowed`.
 - **Signature help was unreachable** — `lua/config/lsp.lua:26` read `map("<C-k", ...)`,
   missing the closing `>`, so Neovim mapped four literal characters. Replaced with `gK`
   in normal mode, pairing with `K` for hover. Insert mode turned out to need nothing at

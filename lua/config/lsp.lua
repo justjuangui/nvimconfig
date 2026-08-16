@@ -90,6 +90,7 @@ vim.lsp.enable({
 	"tflint",
 	"regalls",
 	"jsonls",
+	"yamlls",
 	"svelte",
 	"golangci_lint_ls",
 })

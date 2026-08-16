@@ -168,6 +168,7 @@ Available in normal, visual and operator-pending mode, so `d]m` works.
 | `:LiveGrepGitRoot` | Live grep scoped to the git root |
 | `:DBUI`, `:DBUIToggle` | Database UI |
 | `:MarkdownPreview`, `:MarkdownPreviewToggle` | Markdown preview in browser |
+| `:LspTypeScriptSourceAction` | TS/JS source actions: fix all, add missing imports, remove unused |
 | `:LspMigrateToSvelte5` | Migrate component to Svelte 5 syntax |
 
 ## Conventions
@@ -187,49 +188,46 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
 
 ### Broken — configured but does nothing
 
-1. **`ts_ls`'s `on_attach` is dead.** `lsp/ts_ls.lua:18` nests it inside `handlers`, so
-   Neovim treats it as a response handler for a nonexistent method and
-   `:LspTypeScriptSourceAction` is never created.
-2. **Svelte LSP cannot start.** `svelteserver` is not installed and
+1. **Svelte LSP cannot start.** `svelteserver` is not installed and
    `svelte-language-server` is missing from `mason-tool-installer`'s `ensure_installed`.
-3. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
+2. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
    linters. Missing: `stylua`, `prettier`, `yamlfmt`, `php-cs-fixer`, `gofumpt`,
    `golines`, `terragrunt`. Only `goimports` resolves.
 
 ### Conflicts
 
-4. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
+3. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
    `lua/config/lsp.lua:47-49` runs alongside `blink.cmp`.
-5. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
+4. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
    `lua/config/settings_setup.lua:59-60`. They are alternatives.
-6. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
+5. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
    `priority`. And `lua/config/lazy.lua:21` names colorscheme `"tokyo"`, which does not
    exist — it is `tokyonight-night`.
-7. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
+6. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
     ships no defaults.
-8. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
+7. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
     `BufWritePre`. Manual `<leader>fd` only.
 
 ### Dead code
 
-9. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
-10. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
+8. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
+9. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
     Neovim variable.
-11. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
-12. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
-13. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
-14. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
-15. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
-16. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
+10. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
+11. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
+12. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
+13. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
+14. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
+15. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
 
 ### Hygiene
 
-17. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
+16. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
     `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-18. The whole DAP stack and `rustaceanvim` load at startup in every project
+17. The whole DAP stack and `rustaceanvim` load at startup in every project
     (~1/3 of the 149 ms startup).
-19. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
-20. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
+18. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
+19. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
     and `tokyo.lua` use 2-space indent while everything else uses tabs.
 
 ### Resolved
@@ -243,6 +241,13 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
   (textobjects ships its own `textobjects.scm` and calls `vim.treesitter` directly, while
   `locals` and `folds` queries still come from nvim-treesitter). Conditionals moved from
   `]d`/`[d` to `]i`/`[i` to avoid shadowing diagnostic navigation.
+- **`ts_ls`'s `on_attach` never ran** — it sat *inside* the `handlers` table rather than
+  beside it, so Neovim treated it as a response handler for an LSP method literally named
+  `on_attach`, which no server sends. `:LspTypeScriptSourceAction` was therefore never
+  created in any TS buffer. Fixed by moving it up one level. Verified: the command now
+  exists, the `_typescript.rename` handler still registers, nothing leaks into `handlers`,
+  and the command offers 4 source actions (fix all, add missing imports, remove unused
+  code, remove unused imports).
 - **`yamlls` was configured but never enabled** — `lsp/yamlls.lua` existed with
   SchemaStore on, and the server was installed, but the name was missing from
   `vim.lsp.enable()`. The same file also had `root_margers` for `root_markers`, so even

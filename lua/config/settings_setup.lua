@@ -56,8 +56,10 @@ vim.diagnostic.config({
 			[vim.diagnostic.severity.INFO] = "»",
 		},
 	},
-	virtual_lines = true,
-	virtual_text = true,
+	-- Full detail on the line you are on, quiet everywhere else.
+	-- These two are alternatives: enabling both renders every diagnostic twice.
+	virtual_lines = { current_line = true },
+	virtual_text = false,
 	severity_sort = true,
 	float = {
 		border = "rounded",

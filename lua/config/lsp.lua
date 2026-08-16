@@ -46,9 +46,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
 			end, "Debug nearest rust test")
 		end
 
-		if client:supports_method("textDocument/completion") then
-			vim.lsp.completion.enable(true, client.id, event.buf, { autotrigger = true })
-		end
+		-- No vim.lsp.completion.enable() here: blink.cmp owns completion and already
+		-- consumes the lsp source. Enabling both makes them race over the same
+		-- capability. See lua/plugins/autocompletion.lua.
 
 		if client:supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
 			local highlight_autogroup = vim.api.nvim_create_augroup("justjuangui-lsp-highlight", { clear = true })

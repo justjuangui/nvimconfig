@@ -184,6 +184,8 @@ Available in normal, visual and operator-pending mode, so `d]m` works.
 - `undofile` on; `inccommand = split` for live substitute preview.
 - Colorscheme: `tokyonight-night`.
 - Diagnostic signs: `✘` error, `▲` warn, `⚑` hint, `»` info.
+- Diagnostics show as virtual *lines* on the cursor line only; virtual text is off.
+- Completion is blink.cmp alone. Native `vim.lsp.completion` is deliberately not enabled.
 
 ## Known issues
 
@@ -197,38 +199,34 @@ _None outstanding._
 
 ### Conflicts
 
-1. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
-   `lua/config/lsp.lua:47-49` runs alongside `blink.cmp`.
-2. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
-   `lua/config/settings_setup.lua:59-60`. They are alternatives.
-3. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
+1. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
    `priority`. And `lua/config/lazy.lua:21` names colorscheme `"tokyo"`, which does not
    exist — it is `tokyonight-night`.
-4. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
+2. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
    ships no defaults.
-5. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
+3. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
    `BufWritePre`. Manual `<leader>fd` only.
 
 ### Dead code
 
-6. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
-7. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
+4. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
+5. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
    Neovim variable.
-8. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
-9. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
-10. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
-11. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
-12. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
-13. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
+6. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
+7. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
+8. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
+9. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
+10. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
+11. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
 
 ### Hygiene
 
-14. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
+12. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
    `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-15. The whole DAP stack and `rustaceanvim` load at startup in every project
+13. The whole DAP stack and `rustaceanvim` load at startup in every project
    (~1/3 of the ~205 ms startup).
-16. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
-17. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
+14. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
+15. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
    and `tokyo.lua` use 2-space indent while everything else uses tabs.
 
 ### Resolved
@@ -242,6 +240,16 @@ _None outstanding._
   (textobjects ships its own `textobjects.scm` and calls `vim.treesitter` directly, while
   `locals` and `folds` queries still come from nvim-treesitter). Conditionals moved from
   `]d`/`[d` to `]i`/`[i` to avoid shadowing diagnostic navigation.
+- **Two completion engines ran at once** — `vim.lsp.completion.enable(…, autotrigger = true)`
+  on `LspAttach` alongside blink.cmp, both subscribing to the same LSP capability. The
+  native call is gone; blink owns completion. Verified: the `nvim.lsp.completion_1`
+  `InsertCharPre` autocmd is no longer registered (re-enabling it puts it straight back,
+  which is how the contrast was confirmed). `omnifunc` stays at `v:lua.vim.lsp.omnifunc`
+  — that is a Neovim default for manual `<C-x><C-o>` and does not conflict.
+- **Every diagnostic rendered twice** — `virtual_lines` and `virtual_text` are
+  alternatives, not complements. Now `virtual_lines = { current_line = true }` with
+  `virtual_text = false`: full detail on the line you are on, quiet elsewhere. Verified
+  by counting extmarks on a file with 4 diagnostics — 8 renderings before, 1 after.
 - **Svelte LSP could not start, and 7 of 9 formatter chains had no binary** —
   `mason-tool-installer`'s `ensure_installed` listed only servers and linters, so
   `svelteserver` and every formatter conform referenced were simply absent. The manifest

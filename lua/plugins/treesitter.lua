@@ -31,7 +31,8 @@ return {
 				"svelte",
 				"rego",
 				"ebnf",
-				"jinja"
+				"jinja",
+				"glsl",
 			},
 			auto_install = false,
 			highlight = {

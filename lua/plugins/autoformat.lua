@@ -7,7 +7,9 @@ return {
 		{
 			"<leader>fd",
 			function()
-				require("conform").format({ async = false, lsp_fallback = true })
+				-- lsp_format = "fallback" comes from default_format_opts below;
+				-- `lsp_fallback = true` is an undocumented compat shim for it.
+				require("conform").format({ async = false })
 			end,
 			mode = "",
 			desc = "[F]ormat [D]ocument",

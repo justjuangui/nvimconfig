@@ -26,13 +26,13 @@ lua/config/
 lua/plugins/               one file per concern, auto-imported by lazy
   autocompletion.lua       blink.cmp + copilot
   autoformat.lua           conform.nvim
-  dap_setup.lua            nvim-dap stack
+  dap_setup.lua            nvim-dap stack (lazy: <F5>, <leader>b, :Dap* commands)
   db_setup.lua             vim-dadbod
   general.lua              lualine, which-key, todo-comments, indent-blankline
   git.lua                  gitsigns, fugitive, rhubarb
   lsp.lua                  mason, mason-tool-installer, lazydev, rustaceanvim, crates
   markdown.lua             markdown-preview, render-markdown
-  neotest.lua              neotest
+  neotest.lua              neotest (lazy: rust filetype)
   telescope.lua            telescope + extensions and all its keymaps
   tokyo.lua                tokyonight colorscheme
   treesitter.lua           nvim-treesitter + textobjects
@@ -126,7 +126,7 @@ implementation, `grt` type definition, `grx` codelens, `gO` document symbols.
 
 | Key | Action |
 | --- | --- |
-| `[d` / `]d` | Previous / next diagnostic |
+| `[d` / `]d` | Previous / next diagnostic (Neovim built-in, not set here) |
 | `<leader>e` | Floating diagnostic |
 | `<leader>q` | Diagnostic loclist |
 | `<leader>fd` | Format document (conform) |
@@ -222,40 +222,27 @@ _None outstanding._
 
 ### Hygiene
 
-Nothing here breaks a feature or fights another subsystem. Items 1 and 2 are the only ones
-with a deadline or a measurable payoff; the rest are preference.
+Nothing here breaks a feature or fights another subsystem, and nothing left is on a clock.
+Item 2 is the one with a concrete payoff; the rest are preference.
 
-1. **Deprecated APIs** (`lua/config/keymaps_setup.lua:6, 25-26`). Both still work in 0.12.4
-   and both are on the removal track: `vim.highlight.on_yank` → `vim.hl.on_yank`, and
-   `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-2. **The DAP stack and `rustaceanvim` load at startup in every project**
-   (`lua/plugins/dap_setup.lua`, `lua/plugins/lsp.lua:9-13`). `dap_setup.lua` declares no
-   `event`, `cmd` or `keys`, so nvim-dap, dap-ui, mason-nvim-dap, telescope-dap,
-   dap-virtual-text, dap-go and nvim-nio all initialise whether or not you intend to
-   debug; `rustaceanvim` is `lazy = false` and pulls `neotest` in with it, in Go and PHP
-   projects too. That stack is ~88 ms of self-time out of a ~249 ms profile — about a
-   third. `mason-nvim-dap.mappings.configurations` alone is the largest single entry.
-   Binding the spec to `keys = { "<F5>", "<leader>b" }` reclaims it.
-   *Treat the absolute figure as unreliable:* it has read 149, 205, 150 and 249 ms across
-   measurements on an idle machine. The ~1/3 share is what has held steady.
-3. **lazy.nvim checks GitHub for updates on every start** (`lua/config/lazy.lua:22`).
+1. **lazy.nvim checks GitHub for updates on every start** (`lua/config/lazy.lua:22`).
    `checker = { enabled = true }` with no `notify = false`. Given everything is pinned in
    `lazy-lock.json` and updated deliberately, `{ enabled = true, notify = false }` — or a
    `frequency` — is the quieter equivalent.
-4. **`glslc` compile-on-save has no guard and discards its errors**
+2. **`glslc` compile-on-save has no guard and discards its errors**
    (`lua/config/vulkan.lua:15-19`). No `executable()` check, no `on_exit`, no `on_stderr`,
    and the `.spv` lands next to the source. This matters more than it looks: `glsl_analyzer`
    publishes no diagnostics, so this job is the *only* thing that can tell you a shader
    failed to compile — and right now it fails silently.
-5. **`jsonls` runs without any schemas** (`lsp/jsonls.lua`). `yamlls` enables SchemaStore;
+3. **`jsonls` runs without any schemas** (`lsp/jsonls.lua`). `yamlls` enables SchemaStore;
    `jsonls` has no equivalent, so there is no validation or completion for `package.json`,
    `tsconfig.json`, GitHub workflows and so on — the highest-value thing a JSON server does.
    `b0o/schemastore.nvim` feeding `settings.json.schemas` would serve both servers.
-6. **The DAP keys are invisible to which-key and `<leader>sk`**
+4. **The DAP keys are invisible to which-key and `<leader>sk`**
    (`lua/plugins/dap_setup.lua:31-38`, `lua/plugins/general.lua`). The bindings carry
    descriptions, but no which-key group covers `<F1>`–`<F7>` or `<leader>b`, so they never
    surface next to the groups that are declared.
-7. **No `.stylua.toml` despite formatting Lua with stylua.** `telescope.lua`,
+5. **No `.stylua.toml` despite formatting Lua with stylua.** `telescope.lua`,
    `db_setup.lua` and `tokyo.lua` use 2-space indent, and `lsp/jsonls.lua` uses single
    quotes, while everything else uses tabs and double quotes — the kickstart-derived files,
    never reformatted. `vim-sleuth` is installed and will infer the *wrong* indent from
@@ -303,6 +290,23 @@ has the diagnosis and the check for each, and the commit messages carry the proo
 - Conform loaded on the first save of every session for nothing: `format_on_save = nil`,
   yet `event = "BufWritePre"` still pulled the plugin in. (`9adddf3`)
 
+**Hygiene — deprecations and startup cost**
+
+- Two APIs deprecated for removal in **Nvim 0.13**: `vim.diagnostic.goto_prev/goto_next`.
+  Resolved by deletion rather than translation — Neovim 0.11+ already maps `]d`/`[d` to
+  `vim.diagnostic.jump()`, and the float those old functions opened by default is
+  redundant now that `virtual_lines = { current_line = true }` renders the message under
+  the line you land on. (Translating them to `jump({ float = true })`, as the report
+  originally advised, would have swapped one deprecation for another: `opts.float` is
+  itself deprecated for 0.14.) `vim.highlight.on_yank` → `vim.hl.on_yank` in the same
+  pass, and conform's undocumented `lsp_fallback = true` shim dropped, since
+  `default_format_opts` already sets `lsp_format = "fallback"`.
+- The DAP stack and neotest loaded on every launch in every project. `dap_setup.lua` now
+  declares `keys` and `cmd` triggers, and `neotest.lua` is `ft = "rust"` — its only
+  adapter is rustaceanvim's, and its `config()` was what dragged rustaceanvim's internals
+  into startup. **Startup went 250 ms → 150 ms**, confirmed by A/B: reverting reproduced
+  250.6 ms, reapplying gave 149.8 ms (medians of 11 runs each).
+
 **Dead code — read and ignored** (all `3221a0e`)
 
 - PHP `includePaths` pointed at four `C:/Users/JUANGUI/…` stub directories.
@@ -322,11 +326,15 @@ After every `:Lazy update`, run:
 
 ```
 :checkhealth
+:checkhealth vim.deprecated
 :LspInfo         " servers actually attached, not just configured
 :ConformInfo     " formatters actually resolved to a binary
 :Lazy            " orphaned plugins; :Lazy clean removes them
 :verbose map <C-h>
 ```
+
+`vim.deprecated` only reports what has actually been *called* this session — it stays
+green until you exercise the code path. Yank something and press `]d` before trusting it.
 
 Dependency bumps are when branch APIs shift and keys get reclaimed — the treesitter
 textobjects rewrite, the `mason-nvim-dap` option rename and the archived `luvit-meta`

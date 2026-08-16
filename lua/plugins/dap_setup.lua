@@ -1,5 +1,29 @@
 return {
 	"mfussenegger/nvim-dap",
+	-- Lazy triggers. Without these the whole stack — dap, dap-ui, mason-nvim-dap,
+	-- telescope-dap, dap-virtual-text, dap-go and nvim-nio — initialises on every
+	-- launch in every project. The real keymaps are set in config() below; these
+	-- entries only load the plugin and then replay the key.
+	keys = {
+		{ "<F5>", desc = "Debug: Start/Continue" },
+		{ "<F1>", desc = "Debug: Step Into" },
+		{ "<F2>", desc = "Debug: Step Over" },
+		{ "<F3>", desc = "Debug: Step Out" },
+		{ "<F7>", desc = "Debug: See last session result" },
+		{ "<leader>b", desc = "Debug: Toggle BreakPoint" },
+		{ "<leader>B", desc = "Debug: Set Breakpoint" },
+	},
+	-- Entering through a command rather than a key has to work too.
+	cmd = {
+		"DapContinue",
+		"DapToggleBreakpoint",
+		"DapToggleRepl",
+		"DapStepOver",
+		"DapStepInto",
+		"DapStepOut",
+		"DapTerminate",
+		"DapShowLog",
+	},
 	dependencies = {
 		"rcarriga/nvim-dap-ui",
 		"mason-org/mason.nvim",

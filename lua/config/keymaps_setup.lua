@@ -1,8 +1,8 @@
--- [[ Highlighy on yank ]]--
+-- [[ Highlight on yank ]]--
 local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
 vim.api.nvim_create_autocmd("TextYankPost", {
 	callback = function()
-		vim.highlight.on_yank()
+		vim.hl.on_yank()
 	end,
 	group = highlight_group,
 })
@@ -22,8 +22,10 @@ vim.keymap.set("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = tr
 vim.keymap.set("n", "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
 
 -- diagnostic messages
-vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "Go to previous diagnostic message" })
-vim.keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "Go to next diagnostic message" })
+-- No ]d / [d here: Neovim 0.11+ maps both to vim.diagnostic.jump() by default.
+-- The old goto_prev/goto_next defaulted to float = true, but virtual_lines is set to
+-- { current_line = true }, so the message already renders under the line you land on —
+-- a float would print it twice. (`opts.float` on jump() is itself deprecated for 0.14.)
 vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "Open floating diagnostic message" })
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic list" })
 

@@ -9,12 +9,9 @@ return {
 			},
 			environment = {
 				phpVersion = "8.2",
-				includePaths = {
-					"C:/Users/JUANGUI/Downloads/Divi/Divi/",
-					"C:/Users/JUANGUI/AppData/Roaming/Composer/vendor/php-stubs/wordpress-globals/",
-					"C:/Users/JUANGUI/AppData/Roaming/Composer/vendor/php-stubs/acf-pro-stubs/",
-					"C:/Users/JUANGUI/AppData/Roaming/Composer/vendor/php-stubs/wordpress-stubs/",
-				},
+				-- includePaths took a list of absolute Windows paths to WordPress/ACF
+				-- stubs that do not exist on this machine. Add per-project stub dirs
+				-- here (or in a project-local .nvim.lua) if you need them again.
 			},
 		},
 	},

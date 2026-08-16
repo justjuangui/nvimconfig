@@ -93,4 +93,5 @@ vim.lsp.enable({
 	"yamlls",
 	"svelte",
 	"golangci_lint_ls",
+	"glsl_analyzer",
 })

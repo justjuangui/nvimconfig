@@ -21,7 +21,7 @@ return {
 		require("nvim-dap-virtual-text").setup({})
 
 		require("mason-nvim-dap").setup({
-			automatic_setup = true,
+			automatic_installation = true,
 			handlers = {},
 			ensure_installed = {
 				"delve",

@@ -25,7 +25,6 @@ return {
 			javascript = { "prettier" },
 			typescript = { "prettier" },
 			svelte = { "prettier" },
-			tf = { "terraform_fmt" },
 			terraform = { "terraform_fmt" },
 			hcl = { "terragrunt_hclfmt" },
 			yaml = { "yamlfmt" },

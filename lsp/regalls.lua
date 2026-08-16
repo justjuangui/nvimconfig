@@ -11,7 +11,6 @@ return {
 			:gsub("^\\\\", "") -- strip accidental UNC “\\”
 			:gsub("^\\\\%?\\", "") -- strip \\?\ variant
 			:gsub("\\", "/") -- forward slashes are safest
-		vim.print("regal: root_dir", dir)
 		on_dir(dir)
 	end,
 }

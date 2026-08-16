@@ -21,7 +21,7 @@ lua/config/
   lazy.lua                 lazy.nvim bootstrap + setup
   lsp.lua                  LspAttach autocmd + vim.lsp.enable() list
   vulkan.lua               GLSL filetypes + glslc compile on save
-  win_config.lua           PowerShell shell settings (not loaded)
+  win_config.lua           PowerShell shell settings (loaded only when has('win32'))
 
 lua/plugins/               one file per concern, auto-imported by lazy
   autocompletion.lua       blink.cmp + copilot
@@ -40,10 +40,11 @@ lua/plugins/               one file per concern, auto-imported by lazy
 lsp/                       one file per language server, read natively by Neovim
   gopls.lua  golangci_lint_ls.lua  lua_ls.lua  ts_ls.lua  jsonls.lua
   yamlls.lua  phpls.lua  svelte.lua  terraformls.lua  tflint.lua  regalls.lua
+  glsl_analyzer.lua
 ```
 
-Load order in `init.lua`: leader → `settings_setup` → `keymaps_setup` → `lazy` →
-`lsp` → `vulkan`.
+Load order in `init.lua`: leader → `settings_setup` → `keymaps_setup` →
+`win_config` (Windows only) → `lazy` → `lsp` → `vulkan`.
 
 Note that `keymaps_setup` runs **before** plugins load, so any plugin that maps the same
 key wins. See [Known issues](#known-issues).
@@ -62,7 +63,7 @@ key wins. See [Known issues](#known-issues).
 | Rego | `regal` | — | — | — |
 | JSON | `jsonls` | — | — | — |
 | YAML | `yamlls` (SchemaStore) | yamlfmt | — | — |
-| GLSL | — | — | — | compiled to SPIR-V on save |
+| GLSL | `glsl_analyzer` | — | — | compiled to SPIR-V on save |
 | SQL | — (dadbod completion) | — | — | — |
 
 † `terraform` and `terragrunt` are the only tools not installed by Mason — `terraform` is a
@@ -216,28 +217,47 @@ _None outstanding._
 
 ### Dead code
 
-1. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
-2. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
-   Neovim variable.
-3. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
-4. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
-5. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
-6. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
-7. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
-8. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
+_None outstanding._
 
 ### Hygiene
 
-9. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
+1. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
    `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-10. The whole DAP stack and `rustaceanvim` load at startup in every project
+2. The whole DAP stack and `rustaceanvim` load at startup in every project
    (~1/3 of the ~205 ms startup).
-11. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
-12. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
+3. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
+4. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
    and `tokyo.lua` use 2-space indent while everything else uses tabs.
 
 ### Resolved
 
+- **Eight pieces of dead code, cleared in one pass.** Each was verified by running the
+  config, not by reading it:
+  - PHP `includePaths` pointed at four `C:/Users/JUANGUI/…` stub directories that do not
+    exist on this machine. Removed; `intelephense` still attaches with `phpVersion = 8.2`.
+  - `lua/config/win_config.lua` was never required. It is now loaded from `init.lua`
+    behind `vim.fn.has("win32")`, so it works on Windows and stays inert here — `&shell`
+    is still `/usr/bin/bash` after startup. The unrelated `vim.g.terminal_emulator = "wt"`
+    in `settings_setup.lua` is gone; no such Neovim variable exists.
+  - `tf = { "terraform_fmt" }` in conform: `tf` is not a filetype — a `.tf` file is
+    `terraform`, which the next line already covered. Confirmed the `tf` key is gone and
+    `terraform → terraform_fmt` survives. (`terraform_fmt` still reports
+    `Command 'terraform' not found` — the deliberate non-Mason tool, not a regression.)
+  - `indent.disabled = "ruby"` was an unknown key that nvim-treesitter silently dropped,
+    so Ruby indent was never actually disabled. Now `disable = { "ruby" }`, and the
+    loaded `indent` module reports it.
+  - `mason-nvim-dap`'s `automatic_setup` was renamed upstream to
+    `automatic_installation`. Renamed; `dap.adapters` still lists `go` and `delve`.
+  - `luvit-meta` is archived and lazydev ships the `vim.uv` types itself. The library
+    entry and the plugin are gone (`:Lazy clean`, lockfile updated), and hover on
+    `vim.uv.new_timer` still returns the full signature and docs.
+  - `lsp/regalls.lua` printed `regal: root_dir …` to `:messages` on every Rego root
+    resolve. Removed; `regalls` attaches with an empty message log.
+  - `glsl_analyzer` was installed by Mason but never enabled and had no file in `lsp/`.
+    Added `lsp/glsl_analyzer.lua` and enabled it. Verified on a `.frag` buffer: the
+    client attaches, resolves the git root, and serves 1375 completion items. Note it is
+    a completion/navigation server — it publishes no diagnostics, so `glslc` on save is
+    still what catches compile errors.
 - **Window navigation `<C-h/j/k/l>` was dead** — Harpoon rebound all four during plugin
   load, shadowing `lua/config/keymaps_setup.lua:44-47`. Fixed by removing Harpoon.
 - **All Treesitter textobject motions were unmapped** — `nvim-treesitter-textobjects` is
@@ -316,5 +336,6 @@ After every `:Lazy update`, run:
 :verbose map <C-h>
 ```
 
-Dependency bumps are when branch APIs shift and keys get reclaimed — items 1, 2, 7 and 8
-above all arrived that way.
+Dependency bumps are when branch APIs shift and keys get reclaimed — the treesitter
+textobjects rewrite, the `mason-nvim-dap` option rename and the archived `luvit-meta`
+all arrived that way.

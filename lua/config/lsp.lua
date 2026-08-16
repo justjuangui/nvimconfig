@@ -21,8 +21,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("<leader>wd", builtin.diagnostics, "[W]orkspace [D]iagnostics")
 
 		-- help
+		-- K = what is this. gK = what arguments does it take.
+		-- Insert mode is already covered: <C-s> is a Neovim global default
+		-- (see :help lsp-defaults), and blink.cmp's `default` preset binds <C-k>.
 		map("K", vim.lsp.buf.hover, "Hover Documentation")
-		map("<C-k", vim.lsp.buf.signature_help, "Signature Documentation")
+		map("gK", vim.lsp.buf.signature_help, "Signature Documentation")
 
 		-- other functionality
 		map("<leader>wa", vim.lsp.buf.add_workspace_folder, "[W]orkspace [A]dd Folder")

@@ -95,7 +95,8 @@ Check state with `:Mason`, `:LspInfo`, `:ConformInfo`, `:checkhealth`.
 | --- | --- |
 | `gd` / `gr` / `gI` | Definition / references / implementations |
 | `gD` | Declaration |
-| `K` | Hover documentation |
+| `K` | Hover documentation — *what is this* |
+| `gK` | Signature help — *what arguments does it take* |
 | `<leader>D` | Type definition |
 | `<leader>ds` / `<leader>ws` | Document / workspace symbols |
 | `<leader>wd` | Workspace diagnostics |
@@ -106,6 +107,14 @@ Check state with `:Mason`, `:LspInfo`, `:ConformInfo`, `:checkhealth`.
 | `<leader>td` | Debug nearest test (Rust only) |
 
 Document highlight on `CursorHold` is enabled for any server that supports it.
+
+Signature help while typing arguments is automatic — blink.cmp pops it on `(` and `,`.
+Insert mode also has two manual keys that come for free: `<C-s>` is a Neovim global
+default (`:help lsp-defaults`) and `<C-k>` comes from blink.cmp's `default` preset.
+
+Neovim 0.11+ additionally ships global LSP defaults that overlap some bindings above:
+`grn` rename, `gra` code action (normal **and** visual), `grr` references, `gri`
+implementation, `grt` type definition, `grx` codelens, `gO` document symbols.
 
 ### Diagnostics, edit and motion
 
@@ -178,55 +187,52 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
 
 ### Broken — configured but does nothing
 
-1. **Signature help is unreachable.** `lua/config/lsp.lua:26` reads `map("<C-k", ...)` —
-   missing `>`. Note that `<C-k>` is now the "move to upper window" key, so fixing the
-   typo alone would shadow it — signature help needs a different binding.
-2. **`yamlls` is never enabled.** `lsp/yamlls.lua` exists and the server is installed, but
+1. **`yamlls` is never enabled.** `lsp/yamlls.lua` exists and the server is installed, but
    the name is absent from `vim.lsp.enable()` at `lua/config/lsp.lua:82-93`. That file
    also has `root_margers` instead of `root_markers` on line 4.
-3. **`ts_ls`'s `on_attach` is dead.** `lsp/ts_ls.lua:18` nests it inside `handlers`, so
+2. **`ts_ls`'s `on_attach` is dead.** `lsp/ts_ls.lua:18` nests it inside `handlers`, so
    Neovim treats it as a response handler for a nonexistent method and
    `:LspTypeScriptSourceAction` is never created.
-4. **Svelte LSP cannot start.** `svelteserver` is not installed and
+3. **Svelte LSP cannot start.** `svelteserver` is not installed and
    `svelte-language-server` is missing from `mason-tool-installer`'s `ensure_installed`.
-5. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
+4. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
    linters. Missing: `stylua`, `prettier`, `yamlfmt`, `php-cs-fixer`, `gofumpt`,
    `golines`, `terragrunt`. Only `goimports` resolves.
 
 ### Conflicts
 
-6. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
+5. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
    `lua/config/lsp.lua:47-49` runs alongside `blink.cmp`.
-7. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
+6. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
    `lua/config/settings_setup.lua:59-60`. They are alternatives.
-8. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
+7. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
    `priority`. And `lua/config/lazy.lua:21` names colorscheme `"tokyo"`, which does not
    exist — it is `tokyonight-night`.
-9. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
+8. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
     ships no defaults.
-10. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
+9. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
     `BufWritePre`. Manual `<leader>fd` only.
 
 ### Dead code
 
-11. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
-12. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
+10. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
+11. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
     Neovim variable.
-13. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
-14. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
-15. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
-16. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
-17. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
-18. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
+12. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
+13. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
+14. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
+15. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
+16. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
+17. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
 
 ### Hygiene
 
-19. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
+18. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
     `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-20. The whole DAP stack and `rustaceanvim` load at startup in every project
+19. The whole DAP stack and `rustaceanvim` load at startup in every project
     (~1/3 of the 149 ms startup).
-21. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
-22. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
+20. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
+21. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
     and `tokyo.lua` use 2-space indent while everything else uses tabs.
 
 ### Resolved
@@ -240,6 +246,12 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
   (textobjects ships its own `textobjects.scm` and calls `vim.treesitter` directly, while
   `locals` and `folds` queries still come from nvim-treesitter). Conditionals moved from
   `]d`/`[d` to `]i`/`[i` to avoid shadowing diagnostic navigation.
+- **Signature help was unreachable** — `lua/config/lsp.lua:26` read `map("<C-k", ...)`,
+  missing the closing `>`, so Neovim mapped four literal characters. Replaced with `gK`
+  in normal mode, pairing with `K` for hover. Insert mode turned out to need nothing at
+  all: `<C-s>` is a Neovim global default and blink.cmp's `default` preset already binds
+  `<C-k>`. Also enabled blink.cmp's `signature` module so the parameter list appears
+  automatically on `(` and `,`.
 - **`<leader>ca` never worked in visual mode** — the `map()` helper in `lua/config/lsp.lua`
   computed `mode = mode or "n"` and then hardcoded `"n"` in the `vim.keymap.set` call, so
   the `{ "n", "x" }` at the call site was discarded. Lua reports nothing for an unused

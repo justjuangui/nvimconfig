@@ -25,6 +25,8 @@ return {
 				nerd_font_variant = "mono",
 			},
 			completion = { documentation = { auto_show = false } },
+			-- Auto signature help while typing arguments: pops on "(" and ",".
+			signature = { enabled = true },
 			sources = {
 				default = { "lsp", "path", "snippets", "buffer", "copilot" },
 				providers = {

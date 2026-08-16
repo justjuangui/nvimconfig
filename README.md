@@ -58,14 +58,19 @@ key wins. See [Known issues](#known-issues).
 | TypeScript / JS | `ts_ls` | prettier | — | — |
 | Svelte | `svelte` | prettier | — | — |
 | PHP | `intelephense` | php-cs-fixer | — | — |
-| Terraform / HCL | `terraformls`, `tflint` | terraform fmt, terragrunt hclfmt | — | — |
+| Terraform / HCL | `terraformls`, `tflint` | terraform fmt, terragrunt hclfmt† | — | — |
 | Rego | `regal` | — | — | — |
 | JSON | `jsonls` | — | — | — |
 | YAML | `yamlls` (SchemaStore) | yamlfmt | — | — |
 | GLSL | — | — | — | compiled to SPIR-V on save |
 | SQL | — (dadbod completion) | — | — | — |
 
-External tooling is installed by `mason-tool-installer` (see `lua/plugins/lsp.lua`).
+† `terraform` and `terragrunt` are the only tools not installed by Mason — `terraform` is a
+general infra CLI that belongs on the system PATH, and `terragrunt` is not in the Mason
+registry at all. Install both yourself if you format HCL.
+
+Everything else is installed by `mason-tool-installer` (see `lua/plugins/lsp.lua`), whose
+`ensure_installed` is a superset of every binary referenced anywhere in this config.
 Check state with `:Mason`, `:LspInfo`, `:ConformInfo`, `:checkhealth`.
 
 ## Keymaps
@@ -188,47 +193,43 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
 
 ### Broken — configured but does nothing
 
-1. **Svelte LSP cannot start.** `svelteserver` is not installed and
-   `svelte-language-server` is missing from `mason-tool-installer`'s `ensure_installed`.
-2. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
-   linters. Missing: `stylua`, `prettier`, `yamlfmt`, `php-cs-fixer`, `gofumpt`,
-   `golines`, `terragrunt`. Only `goimports` resolves.
+_None outstanding._
 
 ### Conflicts
 
-3. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
+1. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
    `lua/config/lsp.lua:47-49` runs alongside `blink.cmp`.
-4. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
+2. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
    `lua/config/settings_setup.lua:59-60`. They are alternatives.
-5. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
+3. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
    `priority`. And `lua/config/lazy.lua:21` names colorscheme `"tokyo"`, which does not
    exist — it is `tokyonight-night`.
-6. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
-    ships no defaults.
-7. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
-    `BufWritePre`. Manual `<leader>fd` only.
+4. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
+   ships no defaults.
+5. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
+   `BufWritePre`. Manual `<leader>fd` only.
 
 ### Dead code
 
-8. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
-9. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
-    Neovim variable.
-10. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
-11. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
-12. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
-13. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
-14. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
-15. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
+6. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
+7. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
+   Neovim variable.
+8. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
+9. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
+10. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
+11. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
+12. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
+13. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
 
 ### Hygiene
 
-16. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
-    `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-17. The whole DAP stack and `rustaceanvim` load at startup in every project
-    (~1/3 of the 149 ms startup).
-18. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
-19. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
-    and `tokyo.lua` use 2-space indent while everything else uses tabs.
+14. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
+   `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
+15. The whole DAP stack and `rustaceanvim` load at startup in every project
+   (~1/3 of the ~205 ms startup).
+16. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
+17. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
+   and `tokyo.lua` use 2-space indent while everything else uses tabs.
 
 ### Resolved
 
@@ -241,6 +242,14 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
   (textobjects ships its own `textobjects.scm` and calls `vim.treesitter` directly, while
   `locals` and `folds` queries still come from nvim-treesitter). Conditionals moved from
   `]d`/`[d` to `]i`/`[i` to avoid shadowing diagnostic navigation.
+- **Svelte LSP could not start, and 7 of 9 formatter chains had no binary** —
+  `mason-tool-installer`'s `ensure_installed` listed only servers and linters, so
+  `svelteserver` and every formatter conform referenced were simply absent. The manifest
+  is now a superset of every binary named anywhere in the config, grouped by role.
+  Verified end-to-end: lua, ts, yaml, php and go all format through `<leader>fd`, and
+  the Svelte server attaches with `:LspMigrateToSvelte5` available.
+  Two tools stay outside Mason on purpose — `terraform` (general infra CLI, belongs on
+  the system PATH) and `terragrunt` (not in the Mason registry at all).
 - **`ts_ls`'s `on_attach` never ran** — it sat *inside* the `handlers` table rather than
   beside it, so Neovim treated it as a response handler for an LSP method literally named
   `on_attach`, which no server sends. `:LspTypeScriptSourceAction` was therefore never

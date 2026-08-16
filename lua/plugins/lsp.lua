@@ -27,20 +27,40 @@ return {
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
 		dependencies = { "mason-org/mason.nvim" },
 		opts = {
+			-- Superset of every binary referenced anywhere in this config:
+			-- servers in lsp/*.lua and formatters in plugins/autoformat.lua.
+			-- Two tools are deliberately absent, see the note at the bottom.
 			ensure_installed = {
+				-- language servers
 				"lua-language-server",
-				"golangci-lint",
-				"golangci-lint-langserver",
 				"gopls",
 				"json-lsp",
 				"intelephense",
 				"regal",
+				"svelte-language-server",
 				"yaml-language-server",
 				"typescript-language-server",
-				"tflint",
 				"terraform-ls",
 				"glsl_analyzer",
+
+				-- linters
+				"golangci-lint",
+				"golangci-lint-langserver",
+				"tflint",
+
+				-- formatters (conform.nvim)
+				"stylua",
+				"prettier",
+				"yamlfmt",
+				"php-cs-fixer",
+				"goimports",
+				"gofumpt",
+				"golines",
 			},
 		},
+		-- Not installed here, on purpose:
+		--   terraform  — general infra CLI, belongs on the system PATH, not just in nvim
+		--   terragrunt — not in the Mason registry at all; install it yourself for
+		--                conform's `terragrunt_hclfmt` on hcl files
 	},
 }

@@ -2,8 +2,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("justjuangui", { clear = true }),
 	callback = function(event)
 		local map = function(keys, func, desc, mode)
-			mode = mode or "n"
-			vim.keymap.set("n", keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
+			vim.keymap.set(mode or "n", keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
 		end
 
 		map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")

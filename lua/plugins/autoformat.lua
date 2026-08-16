@@ -1,6 +1,7 @@
 return {
 	"stevearc/conform.nvim",
-	event = "BufWritePre",
+	-- Manual formatting only, so <leader>fd is the lazy trigger. No BufWritePre
+	-- event: that loaded the plugin on the first save of every session for nothing.
 	cmd = "ConformInfo",
 	keys = {
 		{
@@ -17,20 +18,8 @@ return {
 			lsp_format = "fallback",
 		},
 		notify_on_error = true,
+		-- Deliberately manual: format with <leader>fd, never on write.
 		format_on_save = nil,
-		-- format_on_save = function(bufnr)
-		-- 	local disable_filetypes = { c = true, cpp = true }
-		-- 	local lsp_format_opt
-		-- 	if disable_filetypes[vim.bo[bufnr].filetype] then
-		-- 		lsp_format_opt = "never"
-		-- 	else
-		-- 		lsp_format_opt = "always"
-		-- 	end
-		-- 	return {
-		-- 		timeout_ms = 500,
-		-- 		lsp_format = lsp_format_opt,
-		-- 	}
-		-- end,
 		formatters_by_ft = {
 			lua = { "stylua" },
 			javascript = { "prettier" },

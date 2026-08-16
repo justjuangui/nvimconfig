@@ -157,6 +157,18 @@ Available in normal, visual and operator-pending mode, so `d]m` works.
 | --- | --- |
 | `<C-h>` / `<C-j>` / `<C-k>` / `<C-l>` | Move to the left / lower / upper / right window |
 
+### Git hunks — gitsigns, buffer-local
+
+| Key | Action |
+| --- | --- |
+| `]c` / `[c` | Next / previous hunk (falls through to the built-in inside a real diff) |
+| `<leader>hs` / `<leader>hr` | Stage / reset hunk (normal **and** visual) |
+| `<leader>hS` / `<leader>hR` | Stage / reset buffer |
+| `<leader>hp` | Preview hunk |
+| `<leader>hb` | Blame line (full) |
+| `<leader>hd` | Diff against index |
+| `<leader>hq` | Send hunks to quickfix |
+
 ### Debug — nvim-dap
 
 | Key | Action |
@@ -186,6 +198,7 @@ Available in normal, visual and operator-pending mode, so `d]m` works.
 - Diagnostic signs: `✘` error, `▲` warn, `⚑` hint, `»` info.
 - Diagnostics show as virtual *lines* on the cursor line only; virtual text is off.
 - Completion is blink.cmp alone. Native `vim.lsp.completion` is deliberately not enabled.
+- No format-on-save. Formatting is manual via `<leader>fd`.
 
 ## Known issues
 
@@ -199,34 +212,28 @@ _None outstanding._
 
 ### Conflicts
 
-1. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
-   `priority`. And `lua/config/lazy.lua:21` names colorscheme `"tokyo"`, which does not
-   exist — it is `tokyonight-night`.
-2. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
-   ships no defaults.
-3. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
-   `BufWritePre`. Manual `<leader>fd` only.
+_None outstanding._
 
 ### Dead code
 
-4. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
-5. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
+1. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
+2. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
    Neovim variable.
-6. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
-7. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
-8. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
-9. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
-10. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
-11. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
+3. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
+4. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
+5. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
+6. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
+7. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
+8. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
 
 ### Hygiene
 
-12. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
+9. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
    `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-13. The whole DAP stack and `rustaceanvim` load at startup in every project
+10. The whole DAP stack and `rustaceanvim` load at startup in every project
    (~1/3 of the ~205 ms startup).
-14. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
-15. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
+11. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
+12. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
    and `tokyo.lua` use 2-space indent while everything else uses tabs.
 
 ### Resolved
@@ -240,6 +247,19 @@ _None outstanding._
   (textobjects ships its own `textobjects.scm` and calls `vim.treesitter` directly, while
   `locals` and `folds` queries still come from nvim-treesitter). Conditionals moved from
   `]d`/`[d` to `]i`/`[i` to avoid shadowing diagnostic navigation.
+- **Colorscheme load order was unpinned** — `lua/plugins/tokyo.lua` said `priotity`, an
+  unknown key lazy.nvim ignores, and `lua/config/lazy.lua` named a colorscheme `"tokyo"`
+  that does not exist. Fixed to `priority = 1000` with `lazy = false`, and the install
+  fallback now names `tokyonight-night`.
+- **The which-key `[G]it [H]unk` group was empty** — gitsigns ships no default keymaps
+  and the config set only sign glyphs, so `<leader>h` opened onto nothing. Added an
+  `on_attach` with stage/reset/preview/blame/diff plus `]c`/`[c` navigation. Uses
+  `nav_hunk` and the toggling `stage_hunk` rather than the deprecated `next_hunk`,
+  `prev_hunk` and `undo_stage_hunk`.
+- **Conform loaded on every first save for nothing** — `format_on_save = nil` meant
+  nothing formatted on write, yet `event = "BufWritePre"` still pulled the plugin in.
+  Manual formatting is the intent, so `<leader>fd` is now the only lazy trigger and the
+  dead commented-out `format_on_save` block is gone.
 - **Two completion engines ran at once** — `vim.lsp.completion.enable(…, autotrigger = true)`
   on `LspAttach` alongside blink.cmp, both subscribing to the same LSP capability. The
   native call is gone; blink owns completion. Verified: the `nvim.lsp.completion_1`

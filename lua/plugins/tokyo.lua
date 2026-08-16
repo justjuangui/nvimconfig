@@ -1,6 +1,7 @@
 return {
   'folke/tokyonight.nvim',
-  priotity = 1000,
+  priority = 1000,
+  lazy = false,
   init = function()
     vim.cmd.colorscheme 'tokyonight-night'
     vim.cmd.hi 'Comment gui=none'

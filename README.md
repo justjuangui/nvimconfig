@@ -122,6 +122,21 @@ Document highlight on `CursorHold` is enabled for any server that supports it.
 | `<leader>oex` | Open netrw explorer |
 | arrow keys | Echo a reminder to use `hjkl` |
 
+### Treesitter motions
+
+Available in normal, visual and operator-pending mode, so `d]m` works.
+
+| Key | Action |
+| --- | --- |
+| `]m` / `[m` | Next / previous function start |
+| `]M` / `[M` | Next / previous function end |
+| `]]` / `[[` | Next / previous class start |
+| `][` / `[]` | Next / previous class end |
+| `]o` | Next loop |
+| `]s` | Next scope (`locals` query) |
+| `]z` | Next fold (`folds` query) |
+| `]i` / `[i` | Next / previous conditional, nearest edge |
+
 ### Windows
 
 | Key | Action |
@@ -163,69 +178,71 @@ Full report: <https://claude.ai/code/artifact/9f94da0d-32ae-45b2-a61d-57a870279f
 
 ### Broken — configured but does nothing
 
-1. **All Treesitter textobject motions are unmapped** (`]m [m ]] [[ ]o ]s ]z ]d` …).
-   `lazy-lock.json` pins `nvim-treesitter` to `master` but `nvim-treesitter-textobjects`
-   to `main`; the main branch dropped the `require("nvim-treesitter.configs").setup{}`
-   API that `lua/plugins/treesitter.lua:49` calls. Fails silently.
-2. **`<leader>ca` never works in visual mode.** The `map()` helper at
+1. **`<leader>ca` never works in visual mode.** The `map()` helper at
    `lua/config/lsp.lua:4-7` computes `mode = mode or "n"` and then hardcodes `"n"`, so
    the `{ "n", "x" }` passed on line 10 is discarded.
-3. **Signature help is unreachable.** `lua/config/lsp.lua:26` reads `map("<C-k", ...)` —
+2. **Signature help is unreachable.** `lua/config/lsp.lua:26` reads `map("<C-k", ...)` —
    missing `>`. Note that `<C-k>` is now the "move to upper window" key, so fixing the
    typo alone would shadow it — signature help needs a different binding.
-4. **`yamlls` is never enabled.** `lsp/yamlls.lua` exists and the server is installed, but
+3. **`yamlls` is never enabled.** `lsp/yamlls.lua` exists and the server is installed, but
    the name is absent from `vim.lsp.enable()` at `lua/config/lsp.lua:82-93`. That file
    also has `root_margers` instead of `root_markers` on line 4.
-5. **`ts_ls`'s `on_attach` is dead.** `lsp/ts_ls.lua:18` nests it inside `handlers`, so
+4. **`ts_ls`'s `on_attach` is dead.** `lsp/ts_ls.lua:18` nests it inside `handlers`, so
    Neovim treats it as a response handler for a nonexistent method and
    `:LspTypeScriptSourceAction` is never created.
-6. **Svelte LSP cannot start.** `svelteserver` is not installed and
+5. **Svelte LSP cannot start.** `svelteserver` is not installed and
    `svelte-language-server` is missing from `mason-tool-installer`'s `ensure_installed`.
-7. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
+6. **7 of 9 formatter chains have no binary.** `ensure_installed` lists only servers and
    linters. Missing: `stylua`, `prettier`, `yamlfmt`, `php-cs-fixer`, `gofumpt`,
    `golines`, `terragrunt`. Only `goimports` resolves.
 
 ### Conflicts
 
-8. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
+7. **Two completion engines.** `vim.lsp.completion.enable(…, autotrigger = true)` at
    `lua/config/lsp.lua:47-49` runs alongside `blink.cmp`.
-9. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
+8. **Diagnostics render twice.** `virtual_lines` and `virtual_text` are both `true` in
    `lua/config/settings_setup.lua:59-60`. They are alternatives.
-10. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
-    `priority`. And `lua/config/lazy.lua:21` names colorscheme `"tokyo"`, which does not
-    exist — it is `tokyonight-night`.
-11. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
+9. **Colorscheme load order unpinned.** `lua/plugins/tokyo.lua:3` says `priotity`, not
+   `priority`. And `lua/config/lazy.lua:21` names colorscheme `"tokyo"`, which does not
+   exist — it is `tokyonight-night`.
+10. **which-key `<leader>h` "Git Hunk" group is empty.** gitsigns sets no keymaps and
     ships no defaults.
-12. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
+11. **Format-on-save is off** (`format_on_save = nil`) while conform still lazy-loads on
     `BufWritePre`. Manual `<leader>fd` only.
 
 ### Dead code
 
-13. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
-14. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
+12. PHP stub `includePaths` point at `C:/Users/JUANGUI/…` (`lsp/phpls.lua:12-17`).
+13. `lua/config/win_config.lua` is unreferenced; `vim.g.terminal_emulator` is not a real
     Neovim variable.
-15. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
-16. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
-17. `dependecies` typo in the textobjects spec (`lua/plugins/treesitter.lua:47`).
-18. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
-19. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
-20. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
-21. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
+14. `tf = { "terraform_fmt" }` — `tf` is not a filetype; line 40 already covers it.
+15. `indent.disabled = "ruby"` should be `indent.disable = { "ruby" }`.
+16. `mason-nvim-dap`'s `automatic_setup` was renamed to `automatic_installation`.
+17. `luvit-meta` is archived — lazydev ships `vim.uv` types itself.
+18. `lsp/regalls.lua:14` has a leftover `vim.print` on every Rego root resolve.
+19. `glsl_analyzer` is installed by Mason but never enabled and has no file in `lsp/`.
 
 ### Hygiene
 
-22. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
+20. Deprecated APIs still in use: `vim.highlight.on_yank` → `vim.hl.on_yank`;
     `vim.diagnostic.goto_prev/goto_next` → `vim.diagnostic.jump({ count = ±1 })`.
-23. The whole DAP stack and `rustaceanvim` load at startup in every project
+21. The whole DAP stack and `rustaceanvim` load at startup in every project
     (~1/3 of the 149 ms startup).
-24. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
-25. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
+22. `glslc` compile-on-save has no `executable()` guard and discards exit code and stderr.
+23. No `.stylua.toml` despite formatting Lua with stylua; `telescope.lua`, `db_setup.lua`
     and `tokyo.lua` use 2-space indent while everything else uses tabs.
 
 ### Resolved
 
 - **Window navigation `<C-h/j/k/l>` was dead** — Harpoon rebound all four during plugin
   load, shadowing `lua/config/keymaps_setup.lua:44-47`. Fixed by removing Harpoon.
+- **All Treesitter textobject motions were unmapped** — `nvim-treesitter-textobjects` is
+  on the `main` branch, which replaced the declarative `nvim-treesitter.configs` API with
+  `setup()` for options plus explicit keymaps. The old call failed silently. Rewritten to
+  the new API; `nvim-treesitter` stays on `master`, since the two plugins are decoupled
+  (textobjects ships its own `textobjects.scm` and calls `vim.treesitter` directly, while
+  `locals` and `folds` queries still come from nvim-treesitter). Conditionals moved from
+  `]d`/`[d` to `]i`/`[i` to avoid shadowing diagnostic navigation.
 
 ## Maintenance
 

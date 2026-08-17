@@ -40,7 +40,7 @@ lua/plugins/               one file per concern, auto-imported by lazy
 lsp/                       one file per language server, read natively by Neovim
   gopls.lua  golangci_lint_ls.lua  lua_ls.lua  ts_ls.lua  jsonls.lua
   yamlls.lua  phpls.lua  svelte.lua  terraformls.lua  tflint.lua  regalls.lua
-  glsl_analyzer.lua
+  glsl_analyzer.lua  clangd.lua
 ```
 
 Load order in `init.lua`: leader → `settings_setup` → `keymaps_setup` →
@@ -63,6 +63,7 @@ key wins. See [Known issues](#known-issues).
 | Rego | `regal` | — | — | — |
 | JSON | `jsonls` | — | — | — |
 | YAML | `yamlls` (SchemaStore) | yamlfmt | — | — |
+| C / C++ | `clangd` (system, not Mason) | clang-format (LSP) | — | — |
 | GLSL | `glsl_analyzer` | — | — | compiled to SPIR-V on save |
 | SQL | — (dadbod completion) | — | — | — |
 

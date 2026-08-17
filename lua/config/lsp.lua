@@ -94,4 +94,5 @@ vim.lsp.enable({
 	"svelte",
 	"golangci_lint_ls",
 	"glsl_analyzer",
+	"clangd",
 })

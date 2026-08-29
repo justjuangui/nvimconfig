@@ -32,6 +32,9 @@ return {
 			yaml = { "yamlfmt" },
 			php = { "php_cs_fixer" },
 			go = { "goimports", "gofumpt", "golines" },
+			c = { "clang_format" },
+			cpp = { "clang_format" },
+			glsl = { "clang_format" },
 		},
 	},
 }

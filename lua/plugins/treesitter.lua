@@ -1,12 +1,12 @@
 return {
 	{
 		"nvim-treesitter/nvim-treesitter",
-		build = ":TSUpdate",
-		main = "nvim-treesitter.configs",
-		branch = "master",
+		branch = "main",
 		lazy = false,
-		opts = {
-			ensure_installed = {
+		build = ":TSUpdate",
+		config = function()
+			-- Async; a no-op for parsers that are already installed.
+			require("nvim-treesitter").install({
 				"c",
 				"cpp",
 				"go",
@@ -33,14 +33,29 @@ return {
 				"ebnf",
 				"jinja",
 				"glsl",
-			},
-			auto_install = false,
-			highlight = {
-				enable = true,
-				additional_vim_regex_highlighting = { "ruby" },
-			},
-			indent = { enable = true, disable = { "ruby" } },
-		},
+			})
+
+			-- The `main` branch enables nothing on its own; highlighting and
+			-- indenting are opt-in per buffer.
+			vim.api.nvim_create_autocmd("FileType", {
+				callback = function(ev)
+					-- Filetype != language ("sh" -> bash, "typescriptreact" -> tsx),
+					-- so let Neovim map it instead of listing patterns by hand.
+					local lang = vim.treesitter.language.get_lang(ev.match)
+					if not lang or not pcall(vim.treesitter.start, ev.buf, lang) then
+						return
+					end
+
+					-- Treesitter indent is experimental upstream; c/cpp keep cindent.
+					if ev.match == "c" or ev.match == "cpp" then
+						vim.bo[ev.buf].indentexpr = ""
+						vim.bo[ev.buf].cindent = true
+					else
+						vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+					end
+				end,
+			})
+		end,
 	},
 	{
 		"nvim-treesitter/nvim-treesitter-textobjects",

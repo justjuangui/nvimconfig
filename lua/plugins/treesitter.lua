@@ -42,7 +42,26 @@ return {
 					-- Filetype != language ("sh" -> bash, "typescriptreact" -> tsx),
 					-- so let Neovim map it instead of listing patterns by hand.
 					local lang = vim.treesitter.language.get_lang(ev.match)
-					if not lang or not pcall(vim.treesitter.start, ev.buf, lang) then
+
+					-- No parser on disk: plugin/UI filetypes, anything not in the
+					-- list above, or an `install()` that has not finished compiling
+					-- yet. Keep legacy syntax; nothing to report.
+					if not lang or #vim.api.nvim_get_runtime_file("parser/" .. lang .. ".*", false) == 0 then
+						vim.bo[ev.buf].syntax = "ON"
+						return
+					end
+
+					-- The parser exists but refused to start (ABI mismatch, a bad
+					-- query, a half-written .so mid-install). Say so: the highlighter
+					-- clears 'syntax' on attach, so failing quietly here renders the
+					-- buffer as plain uncoloured text with no hint as to why.
+					local ok, err = pcall(vim.treesitter.start, ev.buf, lang)
+					if not ok then
+						vim.bo[ev.buf].syntax = "ON"
+						vim.notify(
+							("treesitter: %s highlighting failed, falling back to syntax\n%s"):format(lang, err),
+							vim.log.levels.WARN
+						)
 						return
 					end
 

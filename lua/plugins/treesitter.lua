@@ -51,11 +51,15 @@ return {
 						return
 					end
 
-					-- The parser exists but refused to start (ABI mismatch, a bad
-					-- query, a half-written .so mid-install). Say so: the highlighter
-					-- clears 'syntax' on attach, so failing quietly here renders the
-					-- buffer as plain uncoloured text with no hint as to why.
-					local ok, err = pcall(vim.treesitter.start, ev.buf, lang)
+					-- A parser alone is not enough: `install()` also drops the queries
+					-- into <data>/site/queries/<lang>, as a symlink into the plugin. When
+					-- that link is missing or dangling, `query.get` returns nil, the
+					-- highlighter attaches with nothing to match, and it still clears
+					-- 'syntax' -- a silent plain-text buffer. Check before attaching.
+					local ok, err = pcall(function()
+						assert(vim.treesitter.query.get(lang, "highlights"), "no highlights query installed")
+						vim.treesitter.start(ev.buf, lang)
+					end)
 					if not ok then
 						vim.bo[ev.buf].syntax = "ON"
 						vim.notify(
